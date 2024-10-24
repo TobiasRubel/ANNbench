@@ -1,0 +1,5 @@
+datasets:
+  sift:
+    query_file: "sift_query.fbin"
+    base_file: "sift_base.fbin"
+    gt_file: "sift-1M"
