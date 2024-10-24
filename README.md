@@ -7,11 +7,7 @@ A collection of scripts for benchmarking Approximate Nearest Neighbors Algorithm
 ParlayANN is a required submodule:
 
 ```
-git submodule init
-git submodule update
-cd ParlayANN
-git submodule init
-git submodule update
+git submodule update --init --recursive
 ```
 
 You'll also need snakemake installed on your system as well as scipy,matplotlib. I'll make the install easier through conda asap. 
