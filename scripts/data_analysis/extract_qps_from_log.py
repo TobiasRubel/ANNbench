@@ -53,7 +53,12 @@ def extract_qps_from_log(log_file, csv_file, summary_file):
 
     # If no rows were extracted, stop the script
     if not extracted_rows:
-        print(f"No valid data found in {log_file}")
+        with open(csv_file, 'w', newline='') as csv_out:
+            writer = csv.writer(csv_out)
+            writer.writerow(["No data extracted from log file"])
+        with open(summary_file, 'w', newline='') as summary_out:
+            writer = csv.writer(summary_out)
+            writer.writerow(["No data extracted from log file"])
         return
 
     # Writing the extracted table to a CSV file

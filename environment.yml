@@ -1,0 +1,15 @@
+name: snakemake_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - snakemake
+  - pulp=2.7.0
+  - numpy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - scipy
+  # Add other dependencies as needed

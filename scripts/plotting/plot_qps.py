@@ -9,6 +9,10 @@ def plot_qps_vs_recall(csv_files, plot_file):
 
     for csv_file in csv_files:
         data = pd.read_csv(csv_file)
+        # check if data is "No data extracted from log file"
+        if data.shape[1] <= 1:
+            warnings.warn(f"No data extracted from {csv_file}")
+            continue
         algorithm = os.path.basename(csv_file).split('_')[1:-2]  # Assuming algorithm is in the file name
         
         plt.plot(data['recall'], data['QPS'], marker='o', label=algorithm)

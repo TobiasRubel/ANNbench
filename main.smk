@@ -51,6 +51,15 @@ rule all:
                R=vamana_R_values, L=vamana_L_values, alpha=vamana_alpha_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
         expand(os.path.join(RESULTS_DIR, "{dataset}","logs", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log"),
                R=pyNNDescent_R_values, cluster=pyNNDescent_cluster_sizes, num_clusters=pyNNDescent_num_clusters_values, alpha=pyNNDescent_alpha_values, delta=pyNNDescent_delta_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
+        
+        #create targets for graph files
+        expand(os.path.join(DATA_DIR, "{dataset}","graphs", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.graph"),
+               cluster=HCNNG_cluster_sizes, num_clusters=HCNNG_num_clusters_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
+        expand(os.path.join(DATA_DIR, "{dataset}","graphs", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.graph"),
+               R=vamana_R_values, L=vamana_L_values, alpha=vamana_alpha_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
+        expand(os.path.join(DATA_DIR, "{dataset}","graphs", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph"),
+               R=pyNNDescent_R_values, cluster=pyNNDescent_cluster_sizes, num_clusters=pyNNDescent_num_clusters_values, alpha=pyNNDescent_alpha_values, delta=pyNNDescent_delta_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
+
 
         # create targets for .csv files from converting .log files into more parsable format
         expand(os.path.join(RESULTS_DIR, "{dataset}","qps", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
@@ -102,17 +111,21 @@ rule run_hcnng:
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.log")
+        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_hcnng_k{k}_nthreads{nthreads}.log"),
+        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_hcnng_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile="/dev/null"
+        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", f"{wildcards.dataset}_hcnng_k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
     shell:
         """
+        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -cluster_size {wildcards.cluster} -mst_deg 3 -num_clusters {wildcards.num_clusters} \
-        -graph_outfile {params.graph_outfile} -query_path {input.query_file} -gt_path {input.gt_path} \
-        -data_type float -dist_func Euclidian -base_path {input.base_file} -k {wildcards.k} \
-        > {output} 2>&1
+        -k {wildcards.k} \
+        -graph_outfile {params.graph_outfile} \
+        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
+        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
+        > {output.log_file} 2>&1
         """
+
 
 rule run_vamana:
     input:
@@ -121,36 +134,49 @@ rule run_vamana:
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.log")
+        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_vamana_k{k}_nthreads{nthreads}.log"),
+        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_vamana_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile="/dev/null"
+        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", f"{wildcards.dataset}_vamana_k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
     shell:
         """
+        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -R {wildcards.R} -L {wildcards.L} -alpha {wildcards.alpha} \
-        -graph_outfile {params.graph_outfile} -query_path {input.query_file} -gt_path {input.gt_path} \
-        -data_type float -dist_func Euclidian -base_path {input.base_file} -k {wildcards.k} \
-        > {output} 2>&1
+        -k {wildcards.k} \
+        -graph_outfile {params.graph_outfile} \
+        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
+        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
+        > {output.log_file} 2>&1
         """
 
-rule run_pynndescent:
+
+rule run_pyNNDescent:
     input:
         neighbors=os.path.join(PARLAY_DIR, "pyNNDescent", "neighbors"),
         query_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["query_file"]),
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log")
+        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log"),
+        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile="/dev/null"
+        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", 
+                                                    f"{wildcards.dataset}_pyNNDescent_R{wildcards.R}_cluster{wildcards.cluster}_"
+                                                    f"num_clusters{wildcards.num_clusters}_alpha{wildcards.alpha}_delta{wildcards.delta}_"
+                                                    f"k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
     shell:
         """
+        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -R {wildcards.R} -cluster_size {wildcards.cluster} -num_clusters {wildcards.num_clusters} -alpha {wildcards.alpha} -delta {wildcards.delta} \
-        -graph_outfile {params.graph_outfile} -query_path {input.query_file} -gt_path {input.gt_path} \
-        -data_type float -dist_func Euclidian -base_path {input.base_file} -k {wildcards.k} \
-        > {output} 2>&1
+        -R {wildcards.R} -cluster {wildcards.cluster} -num_clusters {wildcards.num_clusters} \
+        -alpha {wildcards.alpha} -delta {wildcards.delta} \
+        -k {wildcards.k} \
+        -graph_outfile {params.graph_outfile} \
+        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
+        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
+        > {output.log_file} 2>&1
         """
+
 
 # rules for converting logs to csv
 
@@ -181,7 +207,7 @@ rule pynndescent_log_to_csv:
         log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log")
     output:
         csv_file=os.path.join(RESULTS_DIR, "{dataset}/qps/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
-        summary_file=os.path.join(RESULTS_DIR, "{dataset}/summary_stats/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv")
+        summary_file=os.path.join(RESULTS_DIR, "{dataset}/summary_stats/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
     shell:
         """
         python3 scripts/data_analysis/extract_qps_from_log.py {input.log_file} {output.csv_file} {output.summary_file}
@@ -201,4 +227,3 @@ rule plot_dataset_qps:
         """
         python3 -W ignore scripts/plotting/plot_qps.py {input.csv_files} {output.plot_file}
         """
-
