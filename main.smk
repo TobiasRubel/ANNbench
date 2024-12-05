@@ -13,7 +13,10 @@ DATA_DIR = "data"
 # Dataset names and global parameters
 datasets = config["datasets"].keys()
 k_values = [1, 10]  # Change this for param sweeps
-nthreads_values = [64]  # Change this for param sweeps
+nthreads_values = [32]  # Change this for param sweeps
+
+
+algorithms = ["hcnng", "vamana", "pyNNDescent"]
 
 # Parameters for HCNNG
 HCNNG_cluster_sizes = [1000]
@@ -61,6 +64,7 @@ rule all:
                R=pyNNDescent_R_values, cluster=pyNNDescent_cluster_sizes, num_clusters=pyNNDescent_num_clusters_values, alpha=pyNNDescent_alpha_values, delta=pyNNDescent_delta_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
 
 
+
         # create targets for .csv files from converting .log files into more parsable format
         expand(os.path.join(RESULTS_DIR, "{dataset}","qps", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
                cluster=HCNNG_cluster_sizes, num_clusters=HCNNG_num_clusters_values, k=k_values, nthreads=nthreads_values, dataset=datasets),
@@ -79,8 +83,12 @@ rule all:
 
 
         #create targets for plots from .csv files
-        expand(os.path.join(RESULTS_DIR, "{dataset}","plots", "{dataset}_k{k}_nthreads{nthreads}_qps.pdf"),
-               k=k_values, nthreads=nthreads_values, dataset=datasets),
+        # expand(os.path.join(RESULTS_DIR, "{dataset}","plots", "{dataset}_k{k}_nthreads{nthreads}_qps.pdf"),
+        #        k=k_values, nthreads=nthreads_values, dataset=datasets),
+
+        #create targets for chocolate side plots
+        expand(os.path.join(RESULTS_DIR, "{dataset}_chocolate_side.png"),
+               dataset=datasets)
 
 # rules for building code
         
@@ -111,21 +119,19 @@ rule run_hcnng:
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_hcnng_k{k}_nthreads{nthreads}.log"),
-        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_hcnng_k{k}_nthreads{nthreads}.graph")
+        log_path=os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.log"),
+        graph_path=os.path.join(DATA_DIR, "{dataset}", "graphs", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", f"{wildcards.dataset}_hcnng_k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
+        data_type=lambda wildcards: config["datasets"][wildcards.dataset]["data_type"],
+        dist_func=lambda wildcards: config["datasets"][wildcards.dataset]["dist_func"],
     shell:
         """
-        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -k {wildcards.k} \
-        -graph_outfile {params.graph_outfile} \
-        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
-        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
-        > {output.log_file} 2>&1
+        -cluster_size {wildcards.cluster} -mst_deg 3 -num_clusters {wildcards.num_clusters} \
+        -graph_outfile {output.graph_path} -query_path {input.query_file} -gt_path {input.gt_path} \
+        -data_type {params.data_type} -dist_func {params.dist_func} -base_path {input.base_file} -k {wildcards.k} \
+        > {output.log_path} 2>&1
         """
-
 
 rule run_vamana:
     input:
@@ -134,49 +140,40 @@ rule run_vamana:
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_vamana_k{k}_nthreads{nthreads}.log"),
-        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_vamana_k{k}_nthreads{nthreads}.graph")
+        log_path=os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.log"),
+        graph_path=os.path.join(DATA_DIR, "{dataset}", "graphs", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", f"{wildcards.dataset}_vamana_k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
+        data_type=lambda wildcards: config["datasets"][wildcards.dataset]["data_type"],
+        dist_func=lambda wildcards: config["datasets"][wildcards.dataset]["dist_func"],
     shell:
         """
-        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -k {wildcards.k} \
-        -graph_outfile {params.graph_outfile} \
-        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
-        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
-        > {output.log_file} 2>&1
+        -R {wildcards.R} -L {wildcards.L} -alpha {wildcards.alpha} \
+        -graph_outfile {output.graph_path} -query_path {input.query_file} -gt_path {input.gt_path} \
+        -data_type {params.data_type} -dist_func {params.dist_func} -base_path {input.base_file} -k {wildcards.k} \
+        > {output.log_path} 2>&1
         """
 
-
-rule run_pyNNDescent:
+rule run_pynndescent:
     input:
         neighbors=os.path.join(PARLAY_DIR, "pyNNDescent", "neighbors"),
         query_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["query_file"]),
         base_file=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"]),
         gt_path=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["gt_file"])
     output:
-        log_file=os.path.join(RESULTS_DIR, "{dataset}/logs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log"),
-        graph_file=os.path.join(RESULTS_DIR, "{dataset}/graphs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph")
+        log_path=os.path.join(RESULTS_DIR, "{dataset}", "logs", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.log"),
+        graph_path=os.path.join(DATA_DIR, "{dataset}", "graphs", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph")
     params:
-        graph_outfile=lambda wildcards: os.path.join(RESULTS_DIR, wildcards.dataset, "graphs", 
-                                                    f"{wildcards.dataset}_pyNNDescent_R{wildcards.R}_cluster{wildcards.cluster}_"
-                                                    f"num_clusters{wildcards.num_clusters}_alpha{wildcards.alpha}_delta{wildcards.delta}_"
-                                                    f"k{wildcards.k}_nthreads{wildcards.nthreads}.graph")
+        data_type=lambda wildcards: config["datasets"][wildcards.dataset]["data_type"],
+        dist_func=lambda wildcards: config["datasets"][wildcards.dataset]["dist_func"],
     shell:
         """
-        mkdir -p {RESULTS_DIR}/{wildcards.dataset}/graphs
         PARLAY_NUM_THREADS={wildcards.nthreads} {input.neighbors} \
-        -R {wildcards.R} -cluster {wildcards.cluster} -num_clusters {wildcards.num_clusters} \
-        -alpha {wildcards.alpha} -delta {wildcards.delta} \
-        -k {wildcards.k} \
-        -graph_outfile {params.graph_outfile} \
-        -query_path {input.query_file} -gt_path {input.gt_path} -base_path {input.base_file} \
-        -data_type {config["datasets"][wildcards.dataset]["data_type"]} -dist_func {config["datasets"][wildcards.dataset]["dist_func"]} \
-        > {output.log_file} 2>&1
+        -R {wildcards.R} -cluster_size {wildcards.cluster} -num_clusters {wildcards.num_clusters} -alpha {wildcards.alpha} -delta {wildcards.delta} \
+        -graph_outfile {output.graph_path} -query_path {input.query_file} -gt_path {input.gt_path} \
+        -data_type {params.data_type} -dist_func {params.dist_func} -base_path {input.base_file} -k {wildcards.k} \
+        > {output.log_path} 2>&1
         """
-
 
 # rules for converting logs to csv
 
@@ -218,12 +215,38 @@ rule pynndescent_log_to_csv:
 
 
 # Rule to plot dataset QPS from CSV files
-rule plot_dataset_qps:
+# rule plot_dataset_qps:
+#     input:
+#         csv_files=lambda wildcards: glob.glob(os.path.join(RESULTS_DIR, wildcards.dataset, "qps", f"*k{wildcards.k}_*.csv"))
+#     output:
+#         plot_file=os.path.join(RESULTS_DIR, "{dataset}/plots/", "{dataset}_k{k}_nthreads{nthreads}_qps.pdf")
+#     shell:
+#         """
+#         python3 -W ignore scripts/plotting/plot_qps.py {input.csv_files} {output.plot_file}
+#         """
+
+
+# Rule to plot the "chocolate side"
+rule plot_chocolate_side:
     input:
-        csv_files=lambda wildcards: glob.glob(os.path.join(RESULTS_DIR, wildcards.dataset, "qps", f"*k{wildcards.k}_*.csv"))
+        summary_stats=lambda wildcards: expand(
+            "results/{dataset}/summary_stats/{dataset}_{algorithm}_*.csv",
+            dataset=wildcards.dataset,
+            algorithm=algorithms
+        ),
+        qps_files=lambda wildcards: expand(
+            "results/{dataset}/qps/{dataset}_{algorithm}_*.csv",
+            dataset=wildcards.dataset,
+            algorithm=algorithms
+        )
     output:
-        plot_file=os.path.join(RESULTS_DIR, "{dataset}/plots/", "{dataset}_k{k}_nthreads{nthreads}_qps.pdf")
+        "results/{dataset}/plots/chocolate_side.png"
+    params:
+        plot_script="scripts/plotting/plot_chocolate_side.py"
     shell:
         """
-        python3 -W ignore scripts/plotting/plot_qps.py {input.csv_files} {output.plot_file}
+        python {params.plot_script} --dataset {wildcards.dataset} \
+            --summary_stats {input.summary_stats} \
+            --qps_files {input.qps_files} \
+            --output {output}
         """

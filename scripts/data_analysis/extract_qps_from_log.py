@@ -1,7 +1,7 @@
 import csv
 import sys
 import pandas as pd
-from scipy.integrate import simps
+from scipy.integrate import simpson as simps
 
 def extract_qps_from_log(log_file, csv_file, summary_file):
     with open(log_file, 'r') as infile:
@@ -75,9 +75,9 @@ def extract_qps_from_log(log_file, csv_file, summary_file):
 
     # Calculate AUCs using the trapezoidal rule
     data = pd.DataFrame(extracted_rows)
-    auc_qps_vs_recall = simps(data['QPS'], data['recall'])
-    auc_visited_vs_recall = simps(data['average visited'], data['recall'])
-    auc_cmps_vs_recall = simps(data['average cmps'], data['recall'])
+    auc_qps_vs_recall = simps(data['QPS'], x=data['recall'])
+    auc_visited_vs_recall = simps(data['average visited'], x=data['recall'])
+    auc_cmps_vs_recall = simps(data['average cmps'], x=data['recall'])
 
     # Store summary statistics
     summary_stats['average_degree'] = avg_degree

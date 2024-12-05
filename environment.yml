@@ -4,8 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.10
-  - snakemake
+  - python
+  - snakemake=8.14.0
   - pulp=2.7.0
   - numpy
   - pandas
