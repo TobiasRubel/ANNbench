@@ -19,13 +19,13 @@ nthreads_values = [32]  # Change this for param sweeps
 algorithms = ["hcnng", "vamana", "pyNNDescent"]
 
 # Parameters for HCNNG
-HCNNG_cluster_sizes = [1000]
+HCNNG_cluster_sizes = [100, 1000]
 HCNNG_num_clusters_values = [30]
 
 # Parameters for Vamana
 vamana_R_values = [32]
 vamana_L_values = [64]
-vamana_alpha_values = [1.2]
+vamana_alpha_values = [1.0, 1.2]
 
 # Parameters for HNSW
 
@@ -39,7 +39,7 @@ HNSW_ml_values = [34]
 pyNNDescent_R_values = [40]
 pyNNDescent_cluster_sizes = [100]
 pyNNDescent_num_clusters_values = [10]
-pyNNDescent_alpha_values = [1.2]
+pyNNDescent_alpha_values = [1.0, 1.2]
 pyNNDescent_delta_values = [0.05]
 
 
@@ -86,8 +86,8 @@ rule all:
         # expand(os.path.join(RESULTS_DIR, "{dataset}","plots", "{dataset}_k{k}_nthreads{nthreads}_qps.pdf"),
         #        k=k_values, nthreads=nthreads_values, dataset=datasets),
 
-        #create targets for chocolate side plots
-        expand(os.path.join(RESULTS_DIR, "{dataset}_chocolate_side.png"),
+        # Chocolate side plots
+        expand(os.path.join(RESULTS_DIR, "{dataset}", "plots", "{dataset}_chocolate_side.png"),
                dataset=datasets)
 
 # rules for building code
@@ -229,18 +229,40 @@ rule pynndescent_log_to_csv:
 # Rule to plot the "chocolate side"
 rule plot_chocolate_side:
     input:
-        summary_stats=lambda wildcards: expand(
-            "results/{dataset}/summary_stats/{dataset}_{algorithm}_*.csv",
-            dataset=wildcards.dataset,
-            algorithm=algorithms
-        ),
-        qps_files=lambda wildcards: expand(
-            "results/{dataset}/qps/{dataset}_{algorithm}_*.csv",
-            dataset=wildcards.dataset,
-            algorithm=algorithms
-        )
+        # QPS CSV files
+        qps_files=[
+            # HCNNG
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "qps", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
+                   cluster=HCNNG_cluster_sizes, num_clusters=HCNNG_num_clusters_values,
+                   k=k_values, nthreads=nthreads_values, dataset="{dataset}"),
+            # Vamana
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "qps", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"),
+                   R=vamana_R_values, L=vamana_L_values, alpha=vamana_alpha_values,
+                   k=k_values, nthreads=nthreads_values, dataset="{dataset}"),
+            # pyNNDescent
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "qps", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
+                   R=pyNNDescent_R_values, cluster=pyNNDescent_cluster_sizes,
+                   num_clusters=pyNNDescent_num_clusters_values, alpha=pyNNDescent_alpha_values,
+                   delta=pyNNDescent_delta_values, k=k_values, nthreads=nthreads_values, dataset="{dataset}")
+        ],
+        # Summary statistics CSV files
+        summary_stats=[
+            # HCNNG
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
+                   cluster=HCNNG_cluster_sizes, num_clusters=HCNNG_num_clusters_values,
+                   k=k_values, nthreads=nthreads_values, dataset="{dataset}"),
+            # Vamana
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"),
+                   R=vamana_R_values, L=vamana_L_values, alpha=vamana_alpha_values,
+                   k=k_values, nthreads=nthreads_values, dataset="{dataset}"),
+            # pyNNDescent
+            expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
+                   R=pyNNDescent_R_values, cluster=pyNNDescent_cluster_sizes,
+                   num_clusters=pyNNDescent_num_clusters_values, alpha=pyNNDescent_alpha_values,
+                   delta=pyNNDescent_delta_values, k=k_values, nthreads=nthreads_values, dataset="{dataset}")
+        ]
     output:
-        "results/{dataset}/plots/chocolate_side.png"
+        os.path.join(RESULTS_DIR, "{dataset}", "plots", "{dataset}_chocolate_side.png")
     params:
         plot_script="scripts/plotting/plot_chocolate_side.py"
     shell:
