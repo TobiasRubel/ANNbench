@@ -93,44 +93,44 @@ rule all:
         # Chocolate summary statistics
         expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "{dataset}_k{k}_nthreads{nthreads}_chocolate_summary.md"),
                dataset=datasets, k=k_values, nthreads=nthreads_values),
-        # HCNNG graph stats
-            expand(
-            os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
-                         "graph_stats_{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
-            dataset=datasets,
-            cluster=HCNNG_cluster_sizes,
-            num_clusters=HCNNG_num_clusters_values,
-            k=k_values,
-            nthreads=nthreads_values
-        ),
-        # Vamana graph stats
-        expand(
-            os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
-                         "graph_stats_{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"),
-            dataset=datasets,
-            R=vamana_R_values,
-            L=vamana_L_values,
-            alpha=vamana_alpha_values,
-            k=k_values,
-            nthreads=nthreads_values
-        ),
-        # pyNNDescent graph stats
-        expand(
-            os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
-                         "graph_stats_{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
-            dataset=datasets,
-            R=pyNNDescent_R_values,
-            cluster=pyNNDescent_cluster_sizes,
-            num_clusters=pyNNDescent_num_clusters_values,
-            alpha=pyNNDescent_alpha_values,
-            delta=pyNNDescent_delta_values,
-            k=k_values,
-            nthreads=nthreads_values
-        ),
+        # # HCNNG graph stats
+        #     expand(
+        #     os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
+        #                  "graph_stats_{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"),
+        #     dataset=datasets,
+        #     cluster=HCNNG_cluster_sizes,
+        #     num_clusters=HCNNG_num_clusters_values,
+        #     k=k_values,
+        #     nthreads=nthreads_values
+        # ),
+        # # Vamana graph stats
+        # expand(
+        #     os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
+        #                  "graph_stats_{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"),
+        #     dataset=datasets,
+        #     R=vamana_R_values,
+        #     L=vamana_L_values,
+        #     alpha=vamana_alpha_values,
+        #     k=k_values,
+        #     nthreads=nthreads_values
+        # ),
+        # # pyNNDescent graph stats
+        # expand(
+        #     os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
+        #                  "graph_stats_{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"),
+        #     dataset=datasets,
+        #     R=pyNNDescent_R_values,
+        #     cluster=pyNNDescent_cluster_sizes,
+        #     num_clusters=pyNNDescent_num_clusters_values,
+        #     alpha=pyNNDescent_alpha_values,
+        #     delta=pyNNDescent_delta_values,
+        #     k=k_values,
+        #     nthreads=nthreads_values
+        # ),
 
-        # Correlation between AUC and clustering coefficient
-        expand(os.path.join(RESULTS_DIR, "{dataset}", "plots", "{dataset}_k{k}_nthreads{nthreads}_auc_vs_clust.png"),
-               dataset=datasets, k=k_values, nthreads=nthreads_values),
+        # # Correlation between AUC and clustering coefficient
+        # expand(os.path.join(RESULTS_DIR, "{dataset}", "plots", "{dataset}_k{k}_nthreads{nthreads}_auc_vs_clust.png"),
+        #        dataset=datasets, k=k_values, nthreads=nthreads_values),
 
 # rules for building code
         
