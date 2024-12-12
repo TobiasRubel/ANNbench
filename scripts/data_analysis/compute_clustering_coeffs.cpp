@@ -29,7 +29,9 @@ parlay::sequence<uint32_t> find_knn(const parlay::sequence<val_type>& points, in
         return std::make_pair(i, dist);
     });
 
-    std::partial_sort(distances.begin(), distances.begin() + k, distances.end());
+    std::partial_sort(distances.begin(), distances.begin() + k, distances.end(), [&] (auto a, auto b) {
+        return a.second < b.second;
+    });
     auto neighbors = parlay::tabulate<ind_type>(k, [&] (size_t i) {
         return distances[i].first;
     });
@@ -57,12 +59,12 @@ float compute_local_clustering(const parlay::sequence<val_type>& points, uint32_
 int main(int argc, const char **argv) {
     const char *input_file = "/ssd1/anndata/ANNbench_/data/sift/sift_base.fbin";
     const char *output_file = "clustering_coefficients.txt";
-    int sample_size = 100;
+    int sample_size = 1;
     int k = 10;
 
     std::ifstream reader(input_file);
     if (!reader.is_open()) {
-        std::cout << "Unable to open file for reading: " << input_file << std::endl;
+        std::cerr << "Unable to open file for reading: " << input_file << std::endl;
         return 0;
     }
 
@@ -84,6 +86,12 @@ int main(int argc, const char **argv) {
     parlay::parallel_for(0, sample_size, [&] (size_t i) {
         clustering_coeffs[i] = compute_local_clustering(point_set, sampled_indices[i], num_vecs, num_dims, k);
     }, 1);
+
+    float total_clustering_coeff = 0;
+    for (int i = 0; i < sample_size; i++) {
+        total_clustering_coeff += clustering_coeffs[i];
+    }
+    std::cout << "Average clustering coefficient: " << total_clustering_coeff / sample_size << std::endl;
 
     std::ofstream writer(output_file);
     if (!writer.is_open()) {
