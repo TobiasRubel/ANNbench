@@ -57,6 +57,11 @@ float compute_local_clustering(const parlay::sequence<val_type>& points, uint32_
 }
 
 int main(int argc, const char **argv) {
+<<<<<<< HEAD
+    const char *input_file = "/ssd1/anndata/ANNbench_/data/sift/sift_base.fbin";
+    const char *output_file = "clustering_coefficients.txt";
+    int sample_size = 1;
+=======
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <input_file> <output_file>\n";
         return 1;
@@ -66,6 +71,7 @@ int main(int argc, const char **argv) {
     const char *output_file = argv[2];
 
     int sample_size = 100;
+>>>>>>> 5b16da2a5d42ec31e7acf16f35a4af8e241fe599
     int k = 10;
 
     std::ifstream reader(input_file);
