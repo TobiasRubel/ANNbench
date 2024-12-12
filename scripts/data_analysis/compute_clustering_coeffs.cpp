@@ -33,7 +33,7 @@ parlay::sequence<uint32_t> find_knn(const parlay::sequence<val_type>& points, in
         return a.second < b.second;
     });
     auto neighbors = parlay::tabulate<ind_type>(k, [&] (size_t i) {
-        return distances[i].first;
+        return distances[i + 1].first;
     });
     return neighbors;
 }
@@ -42,6 +42,7 @@ float compute_local_clustering(const parlay::sequence<val_type>& points, uint32_
     int connections = 0;
 
     auto neighbors = find_knn(points, index, k, num_vecs, num_dims);
+    neighbors.push_back(index);
     std::unordered_set<uint32_t> neighbor_set(neighbors.begin(), neighbors.end());
 
     for (int i = 0; i < neighbors.size(); i++) {
