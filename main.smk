@@ -93,6 +93,13 @@ rule all:
         # Chocolate summary statistics
         expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "{dataset}_k{k}_nthreads{nthreads}_chocolate_summary.md"),
                dataset=datasets, k=k_values, nthreads=nthreads_values),
+        
+        # clustering coefficient extimations
+        expand(os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "clustering_coefficient.txt"),
+               dataset=datasets),
+        expand(os.path.join(RESULTS_DIR, "{dataset}", "plots", "clustering_coefficient.png"),
+               dataset=datasets)
+
         # # HCNNG graph stats
         #     expand(
         #     os.path.join(RESULTS_DIR, "{dataset}", "summary_stats",
@@ -151,6 +158,12 @@ rule build_pynndescent:
         os.path.join(PARLAY_DIR, "pyNNDescent", "neighbors")
     shell:
         "cd {PARLAY_DIR}/pyNNDescent && make"
+
+rule build_clustering_coefficient:
+    output:
+        os.path.join("scripts", "data_analysis", "compute_clustering_coeffs")
+    shell:
+        "cd scripts/data_analysis && make"
 
 # rules for running programs
 
@@ -254,53 +267,53 @@ rule pynndescent_log_to_csv:
 
 # generate graph summary statistics
 
-rule compute_graph_stats_hcnng:
-    input:
-        graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.graph")
-    output:
-        os.path.join(
-            RESULTS_DIR, "{dataset}", "summary_stats",
-            "graph_stats_{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"
-        )
-    params:
-        script="scripts/data_analysis/compute_clustering_coefficient.py"
-    shell:
-        """
-        python {params.script} --input {input.graph_file} --output {output}
-        """
+# rule compute_graph_stats_hcnng:
+#     input:
+#         graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.graph")
+#     output:
+#         os.path.join(
+#             RESULTS_DIR, "{dataset}", "summary_stats",
+#             "graph_stats_{dataset}_hcnng_cluster{cluster}_num_clusters{num_clusters}_k{k}_nthreads{nthreads}.csv"
+#         )
+#     params:
+#         script="scripts/data_analysis/compute_clustering_coefficient.py"
+#     shell:
+#         """
+#         python {params.script} --input {input.graph_file} --output {output}
+#         """
 
 
-rule compute_graph_stats_vamana:
-    input:
-        graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.graph")
+# rule compute_graph_stats_vamana:
+#     input:
+#         graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.graph")
 
-    output:
-        os.path.join(
-            RESULTS_DIR, "{dataset}", "summary_stats",
-            "graph_stats_{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"
-        )
-    params:
-        script="scripts/data_analysis/compute_clustering_coefficient.py"
-    shell:
-        """
-        python {params.script} --input {input.graph_file} --output {output}
-        """
+#     output:
+#         os.path.join(
+#             RESULTS_DIR, "{dataset}", "summary_stats",
+#             "graph_stats_{dataset}_vamana_R{R}_L{L}_alpha{alpha}_k{k}_nthreads{nthreads}.csv"
+#         )
+#     params:
+#         script="scripts/data_analysis/compute_clustering_coefficient.py"
+#     shell:
+#         """
+#         python {params.script} --input {input.graph_file} --output {output}
+#         """
 
 
-rule compute_graph_stats_pynndescent:
-    input:
-        graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph")
-    output:
-        os.path.join(
-            RESULTS_DIR, "{dataset}", "summary_stats",
-            "graph_stats_{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"
-        )
-    params:
-        script="scripts/data_analysis/compute_clustering_coefficient.py"
-    shell:
-        """
-        python {params.script} --input {input.graph_file} --output {output}
-        """
+# rule compute_graph_stats_pynndescent:
+#     input:
+#         graph_file=os.path.join(DATA_DIR, "{dataset}/graphs/", "{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.graph")
+#     output:
+#         os.path.join(
+#             RESULTS_DIR, "{dataset}", "summary_stats",
+#             "graph_stats_{dataset}_pyNNDescent_R{R}_cluster{cluster}_num_clusters{num_clusters}_alpha{alpha}_delta{delta}_k{k}_nthreads{nthreads}.csv"
+#         )
+#     params:
+#         script="scripts/data_analysis/compute_clustering_coefficient.py"
+#     shell:
+#         """
+#         python {params.script} --input {input.graph_file} --output {output}
+#         """
 
 
 
@@ -481,4 +494,32 @@ rule correlate_auc_clust_coef:
             --auc_stats {input.auc_stats} \
             --graph_stats {input.graph_stats} \
             --output {output}
+        """
+
+
+# rules for generating clustering coefficient stuffs
+
+rule compute_clustering_coefficient:
+    input:
+        base_dir=lambda wildcards: os.path.join(DATA_DIR, wildcards.dataset, config["datasets"][wildcards.dataset]["base_file"])
+    output:
+        os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "clustering_coefficient.txt")
+    params:
+        executable=os.path.join("scripts", "data_analysis", "compute_clustering_coeffs")
+    shell:
+        """
+        PARLAY_NUM_THREADS=32 {params.executable} {input.base_dir} {output}
+        """
+
+
+rule plot_clustering_coefficient:
+    input:
+        os.path.join(RESULTS_DIR, "{dataset}", "summary_stats", "clustering_coefficient.txt")
+    output:
+        os.path.join(RESULTS_DIR, "{dataset}", "plots", "clustering_coefficient.png")
+    params:
+        executable=os.path.join("scripts", "plotting", "plot_clustering_coeffs.py")
+    shell:
+        """
+        python {params.executable} {input} {output}
         """

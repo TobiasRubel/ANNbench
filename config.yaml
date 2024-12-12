@@ -1,10 +1,10 @@
 datasets:
-  # sift:
-  #   query_file: "sift_query.fbin"
-  #   base_file: "sift_base.fbin"
-  #   gt_file: "sift-1M"
-  #   data_type: "float"
-  #   dist_func: "Euclidian"
+  sift:
+    query_file: "sift_query.fbin"
+    base_file: "sift_base.fbin"
+    gt_file: "sift-1M"
+    data_type: "float"
+    dist_func: "Euclidian"
   # ba_1M_2:
   #   query_file: "query.fbin"
   #   base_file: "base.fbin"
@@ -35,12 +35,12 @@ datasets:
   #   gt_file: "gmm_1M_2.gt"
   #   data_type: "float"
   #   dist_func: "Euclidian"
-  gmm_1M_4:
-    query_file: "gmm_1M_4_queries.fbin"
-    base_file: "gmm_1M_4_base.fbin"
-    gt_file: "gmm_1M_4.gt"
-    data_type: "float"
-    dist_func: "Euclidian"
+  # gmm_1M_4:
+  #   query_file: "gmm_1M_4_queries.fbin"
+  #   base_file: "gmm_1M_4_base.fbin"
+  #   gt_file: "gmm_1M_4.gt"
+  #   data_type: "float"
+  #   dist_func: "Euclidian"
   # gmm_1M_10:
   #   query_file: "gmm_1M_10_queries.fbin"
   #   base_file: "gmm_1M_10_base.fbin"
@@ -65,12 +65,12 @@ datasets:
   #   gt_file: "heat_1M_4.gt"
   #   data_type: "float"
   #   dist_func: "Euclidian"
-  # heat_1M_10:
-  #   query_file: "heat_1M_10_queries.fbin"
-  #   base_file: "heat_1M_10_base.fbin"
-  #   gt_file: "heat_1M_10.gt"
-  #   data_type: "float"
-  #   dist_func: "Euclidian"
+  heat_1M_10:
+    query_file: "heat_1M_10_queries.fbin"
+    base_file: "heat_1M_10_base.fbin"
+    gt_file: "heat_1M_10.gt"
+    data_type: "float"
+    dist_func: "Euclidian"
   heat_1M_100:
     query_file: "heat_1M_100_queries.fbin"
     base_file: "heat_1M_100_base.fbin"
